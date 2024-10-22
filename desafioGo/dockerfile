@@ -1,0 +1,24 @@
+#Build
+
+FROM golang:1.20-alpine AS builder
+
+WORKDIR /app
+
+# COPIANDO O ARQUIVO PARA O CONTAINER
+COPY main.go .
+
+# Baixa as dependências e compila a aplicação com otimização para um binário estático
+RUN go mod init desafio || true  # Caso não esteja usando módulos, isso será ignorado
+RUN go mod tidy || true          # Apenas para garantir que o ambiente está limpo
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o fullcycle
+
+# USA IMAGEM SCRATCH PARA CRIAR UM CONTAINER MINIMO
+FROM scratch
+
+# COPIA O BINARIO DO BUILD PARA A IMAGEM
+COPY --from=builder /app/fullcycle /fullcycle
+
+# DEFINE O ENTRYPOINT PARA EXECUTAR O BINÁRIO
+ENTRYPOINT [ "/fullcycle" ]
+
+
